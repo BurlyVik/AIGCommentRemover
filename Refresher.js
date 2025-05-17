@@ -1,6 +1,6 @@
 // User needs to navigate to the URL on their desktop (not mobile device):
 // https://www.instagram.com/your_activity/interactions/comments
-// Copy the contents of the Refresher.js javascript file into the console and press enter. Watch the magic happen.
+// Copy the contents of the Refresher.js javascript file into the web browsers console witin developer settings and press enter.
 //
 // Try to not adjust any of the settings, leave it at a default of 3 comments and walk away for an hour or two
 // Instagram blocks or throttles access via their API or UI for a few key reasons when actions are performed to quickly
