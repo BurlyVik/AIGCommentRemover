@@ -2,9 +2,9 @@
 // https://www.instagram.com/your_activity/interactions/comments
 // Copy the contents of the Refresher.js javascript file into the web browsers console witin developer settings and press enter.
 //
-// Try to not adjust any of the settings, leave it at a default of 3 comments and walk away for an hour or two
-// Instagram blocks or throttles access via their API or UI for a few key reasons when actions are performed to quickly
-// Adjusting these settings may result in being block temporarily from their API, so its best to move slow with these requests.
+// Try to not adjust any of the settings, leave it at a default of 3 comments and walk away for an hour or two.
+// Instagram blocks or throttles access via their API or UI for key reasons when actions are performed to quickly.
+// Adjusting these settings may result in being blocked temporarily from their API, so its best to move slow with these requests.
 
 ;(async () => {
   const BATCH = 3, DELAY = 1000, CLICK_DELAY = 300, MAX_RETRIES = 60
