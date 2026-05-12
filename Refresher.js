@@ -7,76 +7,116 @@
 // Adjusting these settings may result in being blocked temporarily from their API, so its best to move slow with these requests.
 
 ;(async () => {
-  const BATCH = 3, DELAY = 1000, CLICK_DELAY = 300, MAX_RETRIES = 60
-  const delay = ms => new Promise(res => setTimeout(res, ms))
+  const TARGET = 10
+  const DELAY = 700
+  const CLICK_DELAY = 120
+  const LOOP_DELAY = 20000
 
-  const waitFor = async (selector, timeout = 30000) => {
-    const start = Date.now()
-    while (Date.now() - start < timeout) {
-      const el = document.querySelector(selector)
-      if (el) return el
-      await delay(100)
+  const delay = ms => new Promise(r => setTimeout(r, ms))
+
+  const realClick = el => {
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    const x = r.left + r.width / 2
+    const y = r.top + r.height / 2
+    const o = { bubbles: true, clientX: x, clientY: y }
+
+    el.dispatchEvent(new PointerEvent('pointerdown', o))
+    el.dispatchEvent(new MouseEvent('mousedown', o))
+    el.dispatchEvent(new PointerEvent('pointerup', o))
+    el.dispatchEvent(new MouseEvent('mouseup', o))
+    el.dispatchEvent(new MouseEvent('click', o))
+  }
+
+  const getSelectBtn = () =>
+    [...document.querySelectorAll('span')]
+      .find(e => e.textContent.toLowerCase().includes('select'))
+      ?.closest('div')
+
+  const getCheckboxes = () =>
+    [...document.querySelectorAll('[aria-label="Toggle checkbox"]')]
+
+  const getClickableParent = el => {
+    let p = el
+    while (p && getComputedStyle(p).pointerEvents === 'none') {
+      p = p.parentElement
     }
-    throw new Error(`Timeout: ${selector}`)
+    return p
   }
 
-  const click = async el => {
-    if (!el) throw new Error('Missing element')
-    el.click()
-  }
+  const getDeleteBtn = () =>
+    [...document.querySelectorAll('span')]
+      .find(e => e.textContent.trim() === 'Delete')
+      ?.closest('div,button')
 
-  const waitForSelect = async () => {
-    for (let i = 0; i < MAX_RETRIES; i++) {
-      if (document.querySelectorAll('[role="button"]')?.length > 1) return
-      await delay(1000)
+  const getConfirmBtn = () =>
+    document.querySelector('button._a9--._ap36._a9_1')
+
+  while (true) {
+    console.log('New cycle')
+
+    // Step 1: enter select mode
+    const selectBtn = getSelectBtn()
+    if (!selectBtn) {
+      console.log('Select button not found — stopping')
+      break
     }
-    throw new Error('Select button not found')
-  }
 
-  const deleteSelected = async () => {
-    try {
-      const deleteBtn = await waitFor('[aria-label="Delete"][style*="pointer-events: auto"]')
-      await click(deleteBtn)
-      await delay(DELAY)
+    realClick(selectBtn)
+    await delay(DELAY)
 
-      const confirmBtn = await waitFor('button[tabindex="0"]')
-      await click(confirmBtn)
-    } catch (e) {
-      console.error('Delete error:', e.message)
+    // Step 2: select 10
+    const checkboxes = getCheckboxes()
+    let selected = 0
+
+    for (let i = 0; i < checkboxes.length && selected < TARGET; i++) {
+      const clickable = getClickableParent(checkboxes[i])
+      if (!clickable) continue
+
+      realClick(clickable)
+      await delay(CLICK_DELAY)
+
+      selected++
     }
-  }
 
-  const deleteAll = async () => {
-    try {
-      while (true) {
-        const [, selectBtn] = document.querySelectorAll('[role="button"]')
-        if (!selectBtn) throw new Error('Select button missing')
-        await click(selectBtn)
-        await delay(DELAY)
+    console.log(`Selected ${selected}`)
 
-        const boxes = document.querySelectorAll('[aria-label="Toggle checkbox"]')
-        if (!boxes.length) break
-
-        for (let i = 0; i < Math.min(BATCH, boxes.length); i++) {
-          await click(boxes[i])
-          await delay(CLICK_DELAY)
-        }
-
-        await delay(DELAY)
-        await deleteSelected()
-        await delay(DELAY)
-        await waitForSelect()
-        await delay(DELAY)
-      }
-    } catch (e) {
-      console.error('Process error:', e.message)
+    if (selected === 0) {
+      console.log('Nothing left — done')
+      break
     }
+
+    await delay(DELAY)
+
+    // Step 3: delete
+    const deleteBtn = getDeleteBtn()
+    if (!deleteBtn) {
+      console.log('Delete button missing')
+      break
+    }
+
+    realClick(deleteBtn)
+    await delay(DELAY)
+
+    // Step 4: confirm popup
+    let confirmBtn = null
+    for (let i = 0; i < 20; i++) {
+      confirmBtn = getConfirmBtn()
+      if (confirmBtn) break
+      await delay(150)
+    }
+
+    if (!confirmBtn) {
+      console.log('Confirm popup not found')
+      break
+    }
+
+    realClick(confirmBtn)
+    console.log('Deleted batch')
+
+    // WAIT 15 SECONDS BEFORE NEXT RUN
+    await delay(LOOP_DELAY)
   }
 
-  try {
-    await deleteAll()
-    console.log('All comments deleted.')
-  } catch (e) {
-    console.error('Fatal:', e.message)
-  }
+  console.log('Finished all cycles')
 })()
